@@ -1,0 +1,1000 @@
+{
+  "name": "Hybrid PGVector RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -976,
+        0
+      ],
+      "id": "adeab436-9de8-4c77-8c07-5dbde2727d07",
+      "name": "Telegram Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -416,
+        48
+      ],
+      "id": "00be6f32-ac56-44de-9012-6c3d61439119",
+      "name": "Get a file"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": false
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "23d604ed-5e80-4101-9d2f-55597951c563",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "retrieval_demo.knowledge_base",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        1808,
+        0
+      ],
+      "id": "58041cf3-af76-4085-adee-d15b8d1700e9",
+      "name": "Postgres PGVector Store"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "={{ $('Telegram Trigger').item.json.message.document.file_name }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.info?.Title || $('Get a file').item.binary.data.fileName }}"
+              },
+              {
+                "name": "pages",
+                "value": "={{ $json.numpages }}"
+              },
+              {
+                "name": "category",
+                "value": "coloring"
+              },
+              {
+                "name": "page",
+                "value": "={{ $itemIndex + 1 }}"
+              },
+              {
+                "name": "document_key",
+                "value": "={{ $('Telegram Trigger').item.json.message.document.file_name }}"
+              },
+              {
+                "name": "file_unique_id",
+                "value": "={{ $('Telegram Trigger').item.json.message.document.file_unique_id }}"
+              },
+              {
+                "name": "file_hash",
+                "value": "={{ $('Calculate SHA-256').item.json.file_hash }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        2032,
+        224
+      ],
+      "id": "4a77697f-da72-4948-b2fe-3b1509878c33",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 700,
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        448
+      ],
+      "id": "3b56d4be-f7c6-4fca-b7a9-9ffa57836bb9",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1856,
+        208
+      ],
+      "id": "1712dd2c-cca2-439d-beab-2271c92c242f",
+      "name": "Embeddings OpenAI"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -608,
+        752
+      ],
+      "id": "e263ba1f-b3d0-454d-b3bf-6733bf8529a7",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": "retrieval_demo.knowledge_base",
+        "prompt": "={{ $json.chatInput }}",
+        "topK": 10,
+        "options": {
+          "distanceStrategy": "cosine"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        752
+      ],
+      "id": "82db89c1-5275-4e8a-8cb7-fbb4ff854233",
+      "name": "Postgres PGVector Store1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        944
+      ],
+      "id": "4026ef41-8b3b-4c30-bb8b-813f2b9c47d9",
+      "name": "Embeddings OpenAI1"
+    },
+    {
+      "parameters": {
+        "content": "## Загрузка ПДФ в векторную базу"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -208
+      ],
+      "id": "6872165a-1f94-42c3-b8ab-79ff6a5678f4",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## сухой поиск по базе\n",
+        "width": 264
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        384,
+        320
+      ],
+      "id": "d7bd9ed7-36ca-4686-b8a6-ede73c7ec4ca",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Ты консультант по уходу за волосами.\n\nЕсли вопрос пользователя касается ухода за волосами,\nсредств, типов волос или рекомендаций, обязательно используй\nинструмент search_hair_knowledge.\n\nФормируй ответ на основании найденной информации.\nНе придумывай сведения, которых нет в базе знаний.\n\nЕсли в базе знаний недостаточно информации, прямо сообщи об этом.\n\nПри использовании search_hair_knowledge указывай в конце ответа источник\nна основании metadata найденных документов.\n\nФормат:\nИсточник: <title> (<source>)\n\nНе придумывай источник, используй только metadata,\nполученные из search_hair_knowledge."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        48,
+        1264
+      ],
+      "id": "1e5d0d4c-e727-462d-8d4b-453db12364c4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        1696
+      ],
+      "id": "7e42c0ec-5744-424e-853c-5165295abaf4",
+      "name": "Embeddings OpenAI2"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Поиск информации в базе знаний по уходу за волосами.\n\nИспользуй этот инструмент, когда пользователь спрашивает\nоб уходе за волосами, типах волос, шампунях, кондиционерах,\nмасках, средствах, повреждении волос и рекомендациях по уходу.\n\nОтвечай на такие вопросы на основании найденной информации.",
+        "tableName": "retrieval_demo.knowledge_base",
+        "topK": "={{ 10 }}",
+        "useReranker": true,
+        "options": {
+          "distanceStrategy": "cosine",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "category",
+                "value": "coloring"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        1520
+      ],
+      "id": "c28de96a-eab4-4104-b0b4-2eb9457f3b8b",
+      "name": "search_hair_knowledge"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        1472
+      ],
+      "id": "9a1b533a-2f41-4278-ba43-7d79c89c3a7b",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "text",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        0
+      ],
+      "id": "b124935d-455e-4cdb-8dcc-47a385992986",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    EXISTS (\n        SELECT 1\n        FROM retrieval_demo.knowledge_base\n        WHERE metadata->>'document_key' = $1\n    ) AS document_exists,\n\n    EXISTS (\n        SELECT 1\n        FROM retrieval_demo.knowledge_base\n        WHERE metadata->>'document_key' = $1\n          AND metadata->>'file_unique_id' = $2\n    ) AS exact_file_exists,\n\n    (\n        SELECT COUNT(*)\n        FROM retrieval_demo.knowledge_base\n        WHERE metadata->>'document_key' = $1\n    ) AS chunks_count;",
+        "options": {
+          "queryReplacement": "=$1 = {{ $('Telegram Trigger').item.json.message.document.file_name }}\n\n$2 = {{ $('Telegram Trigger').item.json.message.document.file_unique_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "c24ce962-7f73-4ba0-bd9e-8f45738673a8",
+      "name": "Check document"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM retrieval_demo.knowledge_base\nWHERE metadata->>'document_key' = $1;",
+        "options": {
+          "queryReplacement": "={{ $('Telegram Trigger').item.json.message.document.file_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        800,
+        160
+      ],
+      "id": "d347fa5a-0326-4469-9849-3022367f7ca7",
+      "name": "Delete old document chunks"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1fcb472-e74a-4a3c-a6f5-4700123fb0e5",
+              "leftValue": "={{ $json.exact_file_exists }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -624,
+        0
+      ],
+      "id": "0832e85b-3460-4417-ac9f-de26328a0441",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT EXISTS (\n    SELECT 1\n    FROM retrieval_demo.knowledge_base\n    WHERE metadata->>'file_hash' = $1\n) AS hash_exists;",
+        "options": {
+          "queryReplacement": "={{ $json.file_hash }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        336,
+        160
+      ],
+      "id": "7a741a8f-2a91-4699-82da-8b2caa71612c",
+      "name": "Check file hash"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "20755afd-98c8-4ec9-a08f-e619d0f308e4",
+              "leftValue": "={{ $json.hash_exists }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        160
+      ],
+      "id": "7631c9c0-f6d5-4d12-8111-b5c9aae7614f",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a36f3cd4-6479-4fc2-91b6-162c7a5b17b9",
+              "name": "file_hash",
+              "value": "={{ $json.file_base64.hash('sha256') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        64,
+        48
+      ],
+      "id": "41460e61-d288-4a8b-9694-75bdbf736ca5",
+      "name": "Calculate SHA-256"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1072,
+        -48
+      ],
+      "id": "45ff08b3-ce3a-4156-8221-6119ce9da412",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "file_base64",
+        "options": {
+          "keepSource": "both"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        48
+      ],
+      "id": "bab2029c-0500-432a-8b11-13b5fd2a2460",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "modelName": "rerank-multilingual-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        288,
+        1728
+      ],
+      "id": "5040ccda-2a65-4954-a743-a870102aed5d",
+      "name": "Reranker Cohere"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH q AS (\n    SELECT plainto_tsquery('russian', $1) AS query\n)\nSELECT\n    hk.id,\n    hk.text AS \"pageContent\",\n    hk.metadata,\n    ts_rank_cd(\n        to_tsvector('russian', hk.text),\n        q.query\n    ) AS fts_score\nFROM retrieval_demo.knowledge_base hk\nCROSS JOIN q\nWHERE\n    to_tsvector('russian', hk.text) @@ q.query\nORDER BY fts_score DESC\nLIMIT 10;",
+        "options": {
+          "queryReplacement": "={{ $json.chatInput }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -16,
+        528
+      ],
+      "id": "ba004498-37ab-4d08-9024-0bed1cbf1186",
+      "name": "Full-Text Search"
+    },
+    {
+      "parameters": {
+        "modelName": "rerank-multilingual-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        64,
+        976
+      ],
+      "id": "b66ced96-2624-4191-aa14-6c6ee03ec392",
+      "name": "Reranker Cohere1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "027bd566-8ae8-4edb-ad17-43302492589d",
+              "name": "pageContent",
+              "value": "={{ $json.document.pageContent }}",
+              "type": "string"
+            },
+            {
+              "id": "98dc0d40-f59b-42f1-8e93-bd9611a09d72",
+              "name": "metadata",
+              "value": "={{ $json.document.metadata }}",
+              "type": "object"
+            },
+            {
+              "id": "5a546a79-f171-49f7-9096-feddaadc052a",
+              "name": "vector_score",
+              "value": "={{ $json.score }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        288,
+        752
+      ],
+      "id": "079b3216-f519-41e3-8b5f-c9ee38a7320f",
+      "name": "Normalize Vector Results"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        608,
+        704
+      ],
+      "id": "1124fa07-56f5-4b36-88a7-75b208a6ee21",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "pageContent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        800,
+        704
+      ],
+      "id": "1085309f-ec1e-423a-b2e9-cef44d2f0786",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "candidates",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        704
+      ],
+      "id": "986da87d-4972-4854-b372-cabe0e806d5d",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cohere.ai/v2/rerank",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "cohereApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"rerank-v3.5\",\n  \"query\": $('When chat message received').item.json.chatInput,\n  \"documents\": $json.candidates.map(x => x.pageContent),\n  \"top_n\": 3\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1248,
+        704
+      ],
+      "id": "3e620c71-5b23-43af-a832-8676164edf0b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidates = $('Aggregate').first().json.candidates;\nconst results = $input.first().json.results;\n\nreturn results.map(result => ({\n  json: {\n    ...candidates[result.index],\n    relevance_score: result.relevance_score,\n    rerank_index: result.index\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        704
+      ],
+      "id": "0589356f-92dc-4c34-a401-e2d354c0766a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const docs = $input.all().map(item => item.json);\n\nconst context = docs.map((doc, i) => {\n  return `\n[Источник ${i + 1}]\nФайл: ${doc.metadata?.source ?? 'неизвестно'}\nСтраница: ${doc.metadata?.page ?? 'неизвестно'}\nТекст:\n${doc.pageContent}\n`.trim();\n}).join('\\n\\n');\n\nreturn [{\n  json: {\n    question: $('When chat message received').first().json.chatInput,\n    context\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        704
+      ],
+      "id": "e93745bf-cf92-4ce7-8611-f90297df6814",
+      "name": "Build RAG Context"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Вопрос пользователя:\n{{ $json.question }}\n\nКонтекст из базы знаний:\n{{ $json.context }}",
+        "options": {
+          "systemMessage": "Ты отвечаешь на вопрос пользователя только на основе переданного контекста.\n\nЕсли в контексте нет достаточной информации — прямо скажи, что данных недостаточно.\n\nНе придумывай факты.\n\nВ конце ответа укажи источники, используя названия файлов и номера страниц из контекста.\n\nОтвечай только на основе переданного контекста.\nНе добавляй сведения из собственных знаний.\nНе расширяй и не конкретизируй формулировки, если эта информация явно не указана в контексте.\nЕсли данных недостаточно — сообщи об этом."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1920,
+        704
+      ],
+      "id": "80f0cdd0-55a2-452c-9da0-6ccac6c9481a",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1920,
+        928
+      ],
+      "id": "ef2fc957-b6f2-4abb-b31b-f87e676c9351",
+      "name": "OpenAI Chat Model1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Full-Text Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Postgres PGVector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "search_hair_knowledge",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_hair_knowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check document": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete old document chunks": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check file hash": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Delete old document chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate SHA-256": {
+      "main": [
+        [
+          {
+            "node": "Check file hash",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Calculate SHA-256",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "search_hair_knowledge",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Reranker Cohere1": {
+      "ai_reranker": [
+        []
+      ]
+    },
+    "Postgres PGVector Store1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Vector Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Full-Text Search": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Vector Results": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {

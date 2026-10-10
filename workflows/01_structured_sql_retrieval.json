@@ -1,0 +1,119 @@
+{
+  "name": "Structured SQL Retrieval",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e8c9b553-0e61-4050-abb2-be377eed68bf",
+      "name": "Telegram Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Ты ассистент салона красоты.\n\nЕсли пользователь спрашивает цену, описание или информацию об услуге,\nиспользуй инструмент поиска по прайсу.\n\nНе придумывай цены самостоятельно.\nЕсли услуга не найдена, сообщи, что информации о ней в прайсе нет."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "e3e924d8-1c58-42e1-aaca-848e0f04df77",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "098b3c02-241a-4d52-b17c-105f4b6b2b70",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Ищет услугу в прайсе салона красоты.\nИспользуй инструмент, когда пользователь спрашивает\nцену, стоимость или описание услуги.\n\nВ service_name передавай только название услуги,\nнапример: \"стрижка\", \"окрашивание\", \"кератин\".",
+        "operation": "executeQuery",
+        "query": "SELECT\n    service_name,\n    price,\n    description\nFROM retrieval_demo.price_list\nWHERE LOWER(service_name) LIKE LOWER('%' || $1 || '%')\nLIMIT 5;",
+        "options": {
+          "queryReplacement": "={{ $fromAI(\n  'service_name',\n  'Название услуги, которую пользователь хочет найти в прайсе, например: стрижка',\n  'string'\n) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.7,
+      "position": [
+        384,
+        208
+      ],
+      "id": "de09f554-a086-4399-aea2-6a5769c6d80a",
+      "name": "search_price"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_price": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
